@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Ab3d.PowerToys.Assimp</AssemblyName>
+    <RootNamespace>Ab3d.PowerToys.Assimp</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="AssimpNet">
+      <HintPath>libs\AssimpNet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
