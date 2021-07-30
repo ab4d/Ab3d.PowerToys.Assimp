@@ -6,6 +6,10 @@ Ab3d.PowerToys.Assimp library can be used to import 3D models from many 3D file 
 
 The samples on how to use this library can be found in the [Ab3d.PowerToys.Wpf.Samples](https://github.com/ab4d/Ab3d.PowerToys.Wpf.Samples) project.
 
+
+To import 3D objects directly into [Ab3d.DXEngine](https://www.ab4d.com/DXEngine.aspx) objects (without using WPF 3D objects), you can use the [Ab3d.DXEngine.Assimp](https://www.nuget.org/packages/Ab3d.DXEngine.Assimp) library.
+
+
 ## Dependencies
 
 Assimp.NET assembly that is present in the libs folder.
@@ -18,3 +22,5 @@ Native assimp importer library. The source can be get from [Assimp on GitHub](ht
 * [Ab3d.PowerToys](https://www.ab4d.com/PowerToys.aspx) library homepage
 * [Ab3d.PowerToys.Wpf.Samples](https://github.com/ab4d/Ab3d.PowerToys.Wpf.Samples) project
 * [Ab3d.DXEngine](https://www.ab4d.com/DXEngine.aspx) library (DirectX rendering engine)
+* [Ab3d.DXEngine.Wpf.Samples](https://github.com/ab4d/Ab3d.DXEngine.Wpf.Samples) project
+* [Ab3d.DXEngine.Assimp](https://www.nuget.org/packages/Ab3d.DXEngine.Assimp) library
