@@ -74,11 +74,11 @@ namespace Ab3d.Assimp
         public System.Windows.Media.Media3D.Material DefaultMaterial { get; set; }
 
         /// <summary>
-        /// Gets or sets a Booleand that specifies if we always do a convertion from left to right handed coordinate system.
+        /// Gets or sets a Boolean that specifies if we always do a conversion from left to right handed coordinate system.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>ForceConvertToRightHandedCoordinateSystem</b> gets or sets a Booleand that specifies if we always do a convertion from left to right handed coordinate system.
+        /// <b>ForceConvertToRightHandedCoordinateSystem</b> gets or sets a Boolean that specifies if we always do a conversion from left to right handed coordinate system.
         /// </para>
         /// <para>
         /// WPF uses right handed coordinate system - the Z axis points away from the screen. DirectX uses left handed coordinate system - there the Z axis points into the screen.
@@ -132,7 +132,7 @@ namespace Ab3d.Assimp
         public BitmapCacheOption BitmapCacheOption { get; set; }
 
         /// <summary>
-        /// Gets or sets a Boolena that specifies if Model3DGroups without any child objects are removed from the imported scene. Default value is true. 
+        /// Gets or sets a Boolean that specifies if Model3DGroups without any child objects are removed from the imported scene. Default value is true. 
         /// </summary>
         public bool RemoveEmptyModel3DGroups { get; set; }
 
@@ -277,11 +277,21 @@ namespace Ab3d.Assimp
 
                         if (childMeshName != null)
                         {
+                            var meshName = GetObjectName(geometryModel3D);
+
                             string finalName;
-                            if (hasMoreMeshes)
-                                finalName = string.Format("{0}__{1}", childMeshName, i + 1); // Add mesh count to name
+
+                            if (!string.IsNullOrEmpty(meshName))
+                            {
+                                finalName = childMeshName + '_' + meshName;
+                            }
                             else
-                                finalName = childMeshName;
+                            {
+                                if (hasMoreMeshes)
+                                    finalName = string.Format("{0}__{1}", childMeshName, i + 1); // Add mesh count to name
+                                else
+                                    finalName = childMeshName;
+                            }
 
                             SetObjectName(geometryModel3D, finalName);
                         }
@@ -307,7 +317,7 @@ namespace Ab3d.Assimp
                                 continue;
                             }
                         }
-                        
+
                         model3DGroup.Children.Add(child);
                     }
                 }
@@ -461,11 +471,16 @@ namespace Ab3d.Assimp
                 else
                     wpfMaterial = null;
 
-                var name = assimpMesh.Name;
-                if (!string.IsNullOrEmpty(name))
-                    SetObjectName(wpfMesh, name);
 
                 var geometryModel3D = new System.Windows.Media.Media3D.GeometryModel3D(wpfMesh, wpfMaterial);
+
+
+                var name = assimpMesh.Name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    SetObjectName(wpfMesh, name);
+                    SetObjectName(geometryModel3D, name);
+                }
 
                 if (materialIndex >= 0 && materialIndex < _assimpScene.Materials.Count && _assimpScene.Materials[materialIndex].HasTwoSided)
                     geometryModel3D.BackMaterial = wpfMaterial;
@@ -599,7 +614,7 @@ namespace Ab3d.Assimp
             else if (assimpMaterial.HasName && !string.IsNullOrEmpty(assimpMaterial.Name))
                 SetObjectName(wpfMaterial, assimpMaterial.Name); // Set material's name from assimp name
 
-                return wpfMaterial;
+            return wpfMaterial;
         }
 
         /// <summary>
@@ -882,8 +897,8 @@ namespace Ab3d.Assimp
             //}
             //else
             //{
-                for (int i = 0; i < vertexCount; i++)
-                    point3DCollection.Add(vertices[i].ToWpfPoint3D());
+            for (int i = 0; i < vertexCount; i++)
+                point3DCollection.Add(vertices[i].ToWpfPoint3D());
             //}
 
             meshGeometry3D.Positions = point3DCollection;
@@ -945,7 +960,7 @@ namespace Ab3d.Assimp
 
                         if (indicesCount == 3)
                         {
-                            wpfIndices.AddRange(assimpMeshFace.Indices);
+                            wpfIndices.AddRange(indices);
                         }
                         else if (indicesCount == 4)
                         {
@@ -1023,7 +1038,7 @@ namespace Ab3d.Assimp
                             {
                                 // Get the triangulator Func (by default the triangulator from Ab3d.PowerToys will be used)
                                 var triangulator = GetTriangulator();
-                                
+
                                 if (triangulator != null)
                                 {
                                     // To triangulate 3D positions, we first convert 3D positions to 2D positions.
@@ -1055,7 +1070,7 @@ namespace Ab3d.Assimp
                                     }
                                 }
                             }
-  
+
                         }
                         // else if < 3 just skip this face
 
@@ -1068,7 +1083,7 @@ namespace Ab3d.Assimp
                             for (int j = 1; j < indicesCount; j++)
                             {
                                 int currentIndex = indices[j];
-                                
+
                                 if (currentIndex != firstIndex) // prevent duplicating first index - this could lead to premature closing of the polygon
                                     polygonIndices.Add(currentIndex);
                             }
@@ -1175,6 +1190,28 @@ namespace Ab3d.Assimp
             { }
         }
 
+        private string GetObjectName(DependencyObject dependencyObject)
+        {
+            if (dependencyObject == null)
+                return null;
+
+            string name;
+
+            if (ObjectNames != null && ObjectNames.TryGetValue(dependencyObject, out name))
+                return name;
+
+            try
+            {
+                name = (string)dependencyObject.GetValue(FrameworkElement.NameProperty);
+            }
+            catch
+            {
+                name = null;
+            }
+
+            return name;
+        }
+
         // This method is copied from Ab3d.PowerToys's Ab3d.Extensions class:
 
         // Name must start with a letter or underscore and can contain only letters, digits, or underscores.
@@ -1253,7 +1290,7 @@ namespace Ab3d.Assimp
                 LoggerCallback(msg, data);
         }
 
-        
+
         private const double EPSILON = 2.2204460492503131E-15;
 
         private static bool IsOne(double value)
