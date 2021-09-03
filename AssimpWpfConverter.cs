@@ -519,6 +519,9 @@ namespace Ab3d.Assimp
                 {
                     var textureFilePath = textureSlot.FilePath;
                     wpfDiffuseMaterial = CreateWpfTextureMaterial(textureFilePath, _texturesPath, _resolveResourceFunc);
+
+                    if (assimpMaterial.Opacity < 1 && wpfDiffuseMaterial.Brush != null)
+                        wpfDiffuseMaterial.Brush.Opacity = assimpMaterial.Opacity;
                 }
             }
 
