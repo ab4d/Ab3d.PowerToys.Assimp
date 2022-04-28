@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0-windows7.0</TargetFramework>
+    <TargetFramework>net6.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <AssemblyName>Ab3d.PowerToys.Assimp</AssemblyName>
     <RootNamespace>Ab3d.PowerToys.Assimp</RootNamespace>
     <Version>10.1.8147</Version>
-    <AssemblyVersion>10.1.8147.2050</AssemblyVersion>
-    <FileVersion>10.1.8147.2050</FileVersion>    
+    <AssemblyVersion>10.1.8147.2060</AssemblyVersion>
+    <FileVersion>10.1.8147.2060</FileVersion>    
   </PropertyGroup>
 
   <ItemGroup>

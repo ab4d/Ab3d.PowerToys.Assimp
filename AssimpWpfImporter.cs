@@ -46,9 +46,44 @@ namespace Ab3d.Assimp
         {
             get
             {
-                // NOTE: The official source release of Assimp v5.0 has a bug because the version was not updated to 5.0 (this was fixed later and is also fixed in the compiled version that comes with Ab3d.PowerToys and Ab3d.DXEngine).
                 if (_assimpVersion == null)
-                    _assimpVersion = AssimpLibrary.Instance.GetVersionAsVersion();
+                {
+                    int major, minor, revision;
+
+                    try
+                    {
+                        major = (int)AssimpLibrary.Instance.GetVersionMajor();
+                    }
+                    catch
+                    {
+                        major = 0;
+                    }
+
+                    try
+                    {
+                        minor = (int)AssimpLibrary.Instance.GetVersionMinor();
+                    }
+                    catch
+                    {
+                        minor = 0;
+                    }
+
+                    try
+                    {
+                        revision = (int)AssimpLibrary.Instance.GetVersionRevision();
+                    }
+                    catch
+                    {
+                        revision = 0;
+                    }
+
+                    // Ensure that the version is not negative (this may happen for some builds)
+                    major = Math.Max(0, major);
+                    minor = Math.Max(0, minor);
+                    revision = Math.Max(0, revision);
+                    
+                    _assimpVersion = new Version(major, minor, revision);
+                }
 
                 return _assimpVersion;
             }
@@ -88,11 +123,11 @@ namespace Ab3d.Assimp
         }
 
         /// <summary>
-        /// Gets or sets a Booleand that specifies if we always do a convertion from left to right handed coordinate system.
+        /// Gets or sets a Boolean that specifies if we always do a convertion from left to right handed coordinate system.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>ForceConvertToRightHandedCoordinateSystem</b> gets or sets a Booleand that specifies if we always do a convertion from left to right handed coordinate system.
+        /// <b>ForceConvertToRightHandedCoordinateSystem</b> gets or sets a Boolean that specifies if we always do a convertion from left to right handed coordinate system.
         /// </para>
         /// <para>
         /// WPF uses right handed coordinate system - the Z axis points away from the screen. DirectX uses left handed coordinate system - there the Z axis points into the screen.
@@ -139,7 +174,7 @@ namespace Ab3d.Assimp
         public Scene ImportedAssimpScene { get; private set; }
 
         /// <summary>
-        /// Gets or sets a Booleand that specifies if this instance of AssimpWpfImporter has been disposed.
+        /// Gets or sets a Boolean that specifies if this instance of AssimpWpfImporter has been disposed.
         /// </summary>
         public bool IsDisposed { get; private set; }
 
@@ -222,7 +257,7 @@ namespace Ab3d.Assimp
 
         /// <summary>
         /// ReadModel3D method reads 3D models from stream and returns the 3D models as Model3DGroup or GeomentryModel3D.
-        /// When the model have additional textures, the resolveResourceFunc must be set a method that converts the resource name into a Stream.
+        /// When the model have additional textures, the resolveResourceFunc must be set to a method that converts the resource name into a Stream.
         /// </summary>
         /// <param name="fileStream">file stream</param>
         /// <param name="formatHint">file extension to serve as a hint to Assimp to choose which importer to use - for example ".dae"</param>
@@ -279,7 +314,7 @@ namespace Ab3d.Assimp
 
 
         /// <summary>
-        /// ReadFileToAssimpScene reads the specifed file stream and returns Assimp's Scene object.
+        /// ReadFileToAssimpScene reads the specified file stream and returns Assimp's Scene object.
         /// Assimp's Scene object can be manually converted into WPF's object with AssimpWpfConverter class.
         /// </summary>
         /// <param name="fileStream">file stream</param>

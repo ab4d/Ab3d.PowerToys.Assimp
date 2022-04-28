@@ -935,13 +935,14 @@ namespace Ab3d.Visuals
                 folderPath = System.IO.Path.GetDirectoryName(mainUri.LocalPath);
                 uriStream = new FileStream(mainUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
+#if !NET6_0_OR_GREATER
             else if (mainUri.Scheme == Uri.UriSchemeHttp || mainUri.Scheme == Uri.UriSchemeHttps)
             {
                 WebRequest request = null;
 
                 request = WebRequest.Create(mainUri);
 
-                if (request != null)
+            if (request != null)
                     uriStream = request.GetResponse().GetResponseStream();
                 else
                 {
@@ -951,6 +952,7 @@ namespace Ab3d.Visuals
                         return null;
                 }
             }
+#endif
             else
             {
                 System.Windows.Resources.StreamResourceInfo resourceInfo = null;
@@ -1008,6 +1010,7 @@ namespace Ab3d.Visuals
                     uriStream = resourceInfo.Stream;
                 else
                 {
+#if !NET6_0_OR_GREATER
                     // As a last option try to create a WebRequest
                     // This also works for Design time support - there a Uri is in form: projectresource://-903803344/633054534540000438?file:///C:/Wpf/SVG/my svg_tests/my_flower.svg
                     try
@@ -1040,6 +1043,7 @@ namespace Ab3d.Visuals
                     }
                     catch
                     { }
+#endif
                 }
 
                 if (uriStream == null && throwException)
@@ -1078,7 +1082,7 @@ namespace Ab3d.Visuals
 
         // FROM Ab3d.PowerToys/Visuals/BaseVisual3D.cs
 
-        #region OnPropertyChanged, UpdateContentIfNotInizializing, CreateModel
+#region OnPropertyChanged, UpdateContentIfNotInizializing, CreateModel
         /// <summary>
         /// OnPropertyChanged method calls UpdateContentIfNotInitializing that recreates the model is visible (IsVisible is true) and if not initializing (between BeginInit and EndInit).
         /// </summary>
@@ -1124,9 +1128,9 @@ namespace Ab3d.Visuals
 
             base.OnVisualParentChanged(oldParent);
         }
-        #endregion
+#endregion
 
-        #region Common property validators (ValidateDoublePropertyValue, ValidatePositiveDoublePropertyValue, ...)
+#region Common property validators (ValidateDoublePropertyValue, ValidatePositiveDoublePropertyValue, ...)
         /// <summary>
         /// Returns true if value is valid double
         /// </summary>
@@ -1207,9 +1211,9 @@ namespace Ab3d.Visuals
             return (IsValidAndPositiveDouble(size.Width) &&
                     IsValidAndPositiveDouble(size.Height));
         }
-        #endregion
+#endregion
 
-        #region ISupportInitialize Members
+#region ISupportInitialize Members
 
         /// <summary>
         /// if true the Visual3D is initializing (between BeginInit and EndInit)
@@ -1233,7 +1237,7 @@ namespace Ab3d.Visuals
             UpdateContentIfNotInitializing();
         }
 
-        #endregion
+#endregion
 
         // FROM Ab3d.PowerToys/Utilities/ModelUtils.cs
         private static void ChangeMaterial(Model3D model, Material newMaterial, Material newBackMaterial)

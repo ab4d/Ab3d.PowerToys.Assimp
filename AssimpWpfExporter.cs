@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -149,14 +150,36 @@ namespace Ab3d.Assimp
         /// Gets or sets a Boolean that specifies if full texture file path is exported when writing textures.
         /// If false (by default), then only file name is exported (and a custom texture path that can be specified by <see cref="ExportedTexturePath"/>.
         /// </summary>
+        [Obsolete("ExportFullTexturePaths is obsolete. Please use ExportTextureCallback instead.")]
         public bool ExportFullTexturePaths { get; set; }
 
         /// <summary>
         /// Gets or sets a string that specifies the custom textures paths that is added to the texture file name. Default value is null (no textures path).
         /// This property is used only when <see cref="ExportFullTexturePaths"/> is false.
         /// </summary>
+        [Obsolete("ExportedTexturePath is obsolete. Please use ExportTextureCallback instead.")]
         public string ExportedTexturePath { get; set; }
 
+        /// <summary>
+        /// Gets or sets a Boolean that specifies if textures are embedded into the exported file (only when the exported file support that). False by default.
+        /// When this property is true, then the <see cref="ExportTextureCallback"/> is not called.
+        /// Note that not all file types support embedded textures. If this is not supported and if IsEmbeddingTextures is true, then the textures will not be exported. 
+        /// </summary>
+        public bool IsEmbeddingTextures { get; set; }
+
+        /// <summary>
+        /// Delegate that is used to export the specified bitmap as a texture. The delegate should return file name and relative path that is written to the exported file.
+        /// If null is returned, then the bitmap is not exported.
+        /// </summary>
+        /// <param name="bitmapSource">BitmapSource</param>
+        /// <returns>file name and path that is written to the exported file</returns>
+        public delegate string ExportTextureDelegate(BitmapSource bitmapSource);
+
+        /// <summary>
+        /// ExportTextureCallback is called for each texture. User should set this delegate to the method that saves the bitmap and then returns the relative path to the saved bitmap.
+        /// If null is returned, then the bitmap is not exported.
+        /// </summary>
+        public ExportTextureDelegate ExportTextureCallback;
 
         /// <summary>
         /// Gets an Assimp Scene object that is generated from the WPF 3D objects
@@ -209,6 +232,16 @@ namespace Ab3d.Assimp
         }
 
         /// <summary>
+        /// Exports the 3D objects that were added to this AssimpWpfExporter into a ExportDataBlob (using the specific file format).
+        /// </summary>
+        /// <param name="exportFormatId">formatId of the exported file (see FormatId from <see cref="ExportFormatDescriptions"/> for more information)</param>
+        /// <returns>ExportDataBlob</returns>
+        public ExportDataBlob ExportToDataBlob(string exportFormatId)
+        {
+            return ExportAssimpSceneToDataBlob(AssimpScene, exportFormatId);
+        }
+
+        /// <summary>
         /// ExportViewport3D exports the 3D objects from the viewport3D to the specified file name and specific file format.
         /// </summary>
         /// <param name="viewport3D">Viewport3D's Children will be added to this AssimpWpfExporter</param>
@@ -238,6 +271,20 @@ namespace Ab3d.Assimp
             bool success = assimpContext.ExportFile(assimpScene, fileName, exportFormatId);
 
             return success;
+        }
+
+        /// <summary>
+        /// ExportAssimpScene exports the Assimp scene into a ExportDataBlob (using the specific file format).
+        /// </summary>
+        /// <param name="assimpScene">Assimp scene</param>
+        /// <param name="exportFormatId">formatId of the exported file (see FormatId from <see cref="ExportFormatDescriptions"/> for more information)</param>
+        /// <returns>ExportDataBlob</returns>
+        public static ExportDataBlob ExportAssimpSceneToDataBlob(Scene assimpScene, string exportFormatId)
+        {
+            var assimpContext = new AssimpContext();
+            var dataBlob = assimpContext.ExportToBlob(assimpScene, exportFormatId);
+
+            return dataBlob;
         }
 
         /// <summary>
@@ -576,65 +623,159 @@ namespace Ab3d.Assimp
                 var imageBrush = wpfMaterial.Brush as ImageBrush;
                 if (imageBrush != null)
                 {
-                    var bitmapImage = imageBrush.ImageSource as BitmapImage;
-                    if (bitmapImage != null && bitmapImage.UriSource != null)
+                    var bitmapSource = imageBrush.ImageSource as BitmapSource;
+                    if (bitmapSource != null)
                     {
-                        string fileName = bitmapImage.UriSource.LocalPath;
+                        TextureWrapMode xWrap, yWrap;
 
-                        if (!string.IsNullOrEmpty(fileName))
+                        switch (imageBrush.TileMode)
                         {
-                            TextureWrapMode xWrap, yWrap;
+                            case TileMode.None:
+                                xWrap = TextureWrapMode.Clamp;
+                                yWrap = TextureWrapMode.Clamp;
+                                break;
 
-                            switch (imageBrush.TileMode)
-                            {
-                                case TileMode.None:
-                                    xWrap = TextureWrapMode.Clamp;
-                                    yWrap = TextureWrapMode.Clamp;
-                                    break;
+                            case TileMode.Tile:
+                                xWrap = TextureWrapMode.Wrap;
+                                yWrap = TextureWrapMode.Wrap;
+                                break;
 
-                                case TileMode.Tile:
-                                    xWrap = TextureWrapMode.Wrap;
-                                    yWrap = TextureWrapMode.Wrap;
-                                    break;
+                            case TileMode.FlipX:
+                                xWrap = TextureWrapMode.Mirror;
+                                yWrap = TextureWrapMode.Clamp;
+                                break;
 
-                                case TileMode.FlipX:
-                                    xWrap = TextureWrapMode.Mirror;
-                                    yWrap = TextureWrapMode.Clamp;
-                                    break;
+                            case TileMode.FlipY:
+                                xWrap = TextureWrapMode.Clamp;
+                                yWrap = TextureWrapMode.Mirror;
+                                break;
 
-                                case TileMode.FlipY:
-                                    xWrap = TextureWrapMode.Clamp;
-                                    yWrap = TextureWrapMode.Mirror;
-                                    break;
+                            case TileMode.FlipXY:
+                                xWrap = TextureWrapMode.Mirror;
+                                yWrap = TextureWrapMode.Mirror;
+                                break;
 
-                                case TileMode.FlipXY:
-                                    xWrap = TextureWrapMode.Mirror;
-                                    yWrap = TextureWrapMode.Mirror;
-                                    break;
-
-                                default:
-                                    xWrap = TextureWrapMode.Clamp;
-                                    yWrap = TextureWrapMode.Clamp;
-                                    break;
-                            }
-
-                            string exportedFileName = GetFileName(fileName);
-                            assimpMaterial.TextureDiffuse = new TextureSlot(exportedFileName, TextureType.Diffuse, 0, TextureMapping.FromUV, 0, 1, TextureOperation.Add, xWrap, yWrap, 0);
+                            default:
+                                xWrap = TextureWrapMode.Clamp;
+                                yWrap = TextureWrapMode.Clamp;
+                                break;
                         }
+
+
+                        var bitmapImage = bitmapSource as BitmapImage;
+
+                        string fileName;
+                        if (bitmapImage != null && bitmapImage.UriSource != null)
+                            fileName = bitmapImage.UriSource.OriginalString;
+                        else
+                            fileName = null;
+
+
+                        string exportedFileName;
+
+                        if (IsEmbeddingTextures)
+                        {
+                            if (fileName == null)
+                                exportedFileName = string.Format("*{0}", AssimpScene.Textures.Count); // When no file name is available save the name as index of the embedded texture
+                            else
+                                exportedFileName = System.IO.Path.GetFileName(fileName); // Use only file name without path when using embedded texture
+
+                            AddEmbeddedTexture(exportedFileName, bitmapSource);
+                        }
+                        else if (ExportTextureCallback != null)
+                        {
+                            exportedFileName = ExportTextureCallback(bitmapSource);
+                        }
+                        else
+                        {
+                            exportedFileName = GetFileName(fileName);
+                        }
+
+                        if (exportedFileName != null)
+                            assimpMaterial.TextureDiffuse = new TextureSlot(exportedFileName, TextureType.Diffuse, 0, TextureMapping.FromUV, 0, 1, TextureOperation.Add, xWrap, yWrap, 0);
                     }
                 }
             }
         }
 
+        private void AddEmbeddedTexture(string fileName, BitmapSource bitmapSource)
+        {
+            if (AssimpScene.Textures == null)
+                return;
+
+
+            string fullFileName;
+
+            var bitmapImage = bitmapSource as BitmapImage;
+
+            if (bitmapImage != null && bitmapImage.UriSource != null)
+            {
+                if (bitmapImage.UriSource.IsAbsoluteUri)
+                    fullFileName = bitmapImage.UriSource.LocalPath; // LocalPath is supported only when using AbsoluteUri
+                else
+                    fullFileName = System.IO.Path.Combine(Environment.CurrentDirectory, bitmapImage.UriSource.OriginalString);
+            }
+            else
+            {
+                fullFileName = null;
+            }
+
+
+            byte[] fileBytes;
+            string fileExtension;
+
+            if (fullFileName != null && System.IO.File.Exists(fullFileName))
+            {
+                // Read the original file and embed its content
+
+                fileBytes = System.IO.File.ReadAllBytes(fullFileName);
+
+                fileExtension = System.IO.Path.GetExtension(fileName);
+                if (fileExtension.StartsWith("."))
+                    fileExtension = fileExtension.Substring(1);
+            }
+            else
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    PngBitmapEncoder enc = new PngBitmapEncoder();
+                    enc.Frames.Add(BitmapFrame.Create(bitmapSource));
+                    enc.Save(memoryStream);
+
+                    fileBytes = memoryStream.ToArray();
+                    fileExtension = "png";
+                }
+            }
+
+            // This requires AssimpNet v5.1.0.2
+            var embeddedTexture = new EmbeddedTexture(fileName, fileExtension, fileBytes);
+
+            // With older AssimpNet v5.1.0.0 use reflection to set FileName:
+            //var fileNameProperty = typeof(EmbeddedTexture).GetProperty("FileName", BindingFlags.Instance | BindingFlags.Public);
+            //fileNameProperty.SetValue(embeddedTexture, System.IO.Path.GetFileName(fileName));
+            
+            AssimpScene.Textures.Add(embeddedTexture);
+        }
+
         private string GetFileName(string fileName)
         {
+            if (fileName == null)
+                return null;
+
+#pragma warning disable CS0618
             if (ExportFullTexturePaths)
+            {
+                if (!System.IO.Path.IsPathRooted(fileName))
+                    fileName = System.IO.Path.Combine(Environment.CurrentDirectory, fileName);
+
                 return fileName;
+            }
 
             string exportedFileName = System.IO.Path.GetFileName(fileName);
 
             if (!string.IsNullOrEmpty(ExportedTexturePath))
                 exportedFileName = System.IO.Path.Combine(ExportedTexturePath, exportedFileName);
+#pragma warning restore CS0618
 
             return exportedFileName;
         }

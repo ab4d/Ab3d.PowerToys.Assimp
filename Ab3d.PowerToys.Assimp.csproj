@@ -36,7 +36,7 @@
     <DocumentationFile>bin\Release\Ab3d.PowerToys.Assimp.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AssimpNet, Version=5.0.0.0, Culture=neutral, PublicKeyToken=0d51b391f59f42a6, processorArchitecture=MSIL">
+    <Reference Include="AssimpNet, Version=5.1.0.2, Culture=neutral, PublicKeyToken=0d51b391f59f42a6, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\AssimpNet.dll</HintPath>
     </Reference>

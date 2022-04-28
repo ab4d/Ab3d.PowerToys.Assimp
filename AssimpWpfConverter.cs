@@ -277,20 +277,21 @@ namespace Ab3d.Assimp
 
                         if (childMeshName != null)
                         {
-                            var meshName = GetObjectName(geometryModel3D);
-
                             string finalName;
 
-                            if (!string.IsNullOrEmpty(meshName))
+                            if (hasMoreMeshes)
                             {
-                                finalName = childMeshName + '_' + meshName;
+                                // If node has more meshes then add mesh name or mesh index to the name
+                                var meshName = GetObjectName(geometryModel3D.Geometry); // try to get mesh name
+
+                                if (meshName == null)
+                                    meshName = (i + 1).ToString();
+
+                                finalName = childMeshName + "__" + meshName;
                             }
                             else
                             {
-                                if (hasMoreMeshes)
-                                    finalName = string.Format("{0}__{1}", childMeshName, i + 1); // Add mesh count to name
-                                else
-                                    finalName = childMeshName;
+                                finalName = childMeshName;
                             }
 
                             SetObjectName(geometryModel3D, finalName);
@@ -317,7 +318,7 @@ namespace Ab3d.Assimp
                                 continue;
                             }
                         }
-
+                        
                         model3DGroup.Children.Add(child);
                     }
                 }
@@ -466,15 +467,15 @@ namespace Ab3d.Assimp
                 int materialIndex = assimpMesh.MaterialIndex;
 
                 System.Windows.Media.Media3D.Material wpfMaterial;
-                if (materialIndex >= 0 && materialIndex < WpfMaterials.Length)
+                if (materialIndex >= 0 && WpfMaterials != null && materialIndex < WpfMaterials.Length)
                     wpfMaterial = WpfMaterials[materialIndex];
                 else
                     wpfMaterial = null;
 
-
+                
                 var geometryModel3D = new System.Windows.Media.Media3D.GeometryModel3D(wpfMesh, wpfMaterial);
 
-
+                
                 var name = assimpMesh.Name;
                 if (!string.IsNullOrEmpty(name))
                 {
@@ -614,7 +615,7 @@ namespace Ab3d.Assimp
             else if (assimpMaterial.HasName && !string.IsNullOrEmpty(assimpMaterial.Name))
                 SetObjectName(wpfMaterial, assimpMaterial.Name); // Set material's name from assimp name
 
-            return wpfMaterial;
+                return wpfMaterial;
         }
 
         /// <summary>
@@ -644,6 +645,11 @@ namespace Ab3d.Assimp
                     textureStream = null;
 
                 string finalTextureFileName;
+                
+                // First try to load the texture from embedded textures
+                if (textureStream == null)
+                    textureStream = GetEmbeddedTextureStream(textureFileName);
+
                 if (textureStream == null)
                 {
                     textureFileName = textureFileName.Replace('/', '\\');
@@ -687,11 +693,18 @@ namespace Ab3d.Assimp
 
                 // Create bitmap
                 if (textureStream != null)
+                {
                     bitmapImage = CreateWpfBitmap(textureStream);
+                    textureStream.Close();
+                }
                 else if (finalTextureFileName != null)
+                {
                     bitmapImage = CreateWpfBitmap(finalTextureFileName);
+                }
                 else
+                {
                     bitmapImage = null; // This should not happen
+                }
 
 
                 // Cache the bitmap
@@ -704,6 +717,43 @@ namespace Ab3d.Assimp
                 wpfDiffuseMaterial = CreateTextureMaterial(bitmapImage, textureFileName);
 
             return wpfDiffuseMaterial;
+        }
+
+        private Stream GetEmbeddedTextureStream(string fileName)
+        {
+            if (_assimpScene.Textures == null)
+                return null;
+
+            // When file name starts with *, then follows the index of the the embedded texture
+            if (fileName.StartsWith("*"))
+            {
+                fileName = fileName.Substring(1);
+
+                int pos = fileName.IndexOf('.');
+                if (pos != -1)
+                    fileName = fileName.Substring(0, pos);
+
+                int index;
+                if (Int32.TryParse(fileName, out index))
+                {
+                    if (index >= 0 && index < _assimpScene.Textures.Count)
+                    {
+                        var stream = new MemoryStream(_assimpScene.Textures[index].CompressedData);
+                        return stream;
+                    }
+                }
+            }
+
+            for (var i = 0; i < _assimpScene.Textures.Count; i++)
+            {
+                if (_assimpScene.Textures[i].FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    var stream = new MemoryStream(_assimpScene.Textures[i].CompressedData);
+                    return stream;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -897,8 +947,8 @@ namespace Ab3d.Assimp
             //}
             //else
             //{
-            for (int i = 0; i < vertexCount; i++)
-                point3DCollection.Add(vertices[i].ToWpfPoint3D());
+                for (int i = 0; i < vertexCount; i++)
+                    point3DCollection.Add(vertices[i].ToWpfPoint3D());
             //}
 
             meshGeometry3D.Positions = point3DCollection;
@@ -1038,7 +1088,7 @@ namespace Ab3d.Assimp
                             {
                                 // Get the triangulator Func (by default the triangulator from Ab3d.PowerToys will be used)
                                 var triangulator = GetTriangulator();
-
+                                
                                 if (triangulator != null)
                                 {
                                     // To triangulate 3D positions, we first convert 3D positions to 2D positions.
@@ -1070,7 +1120,7 @@ namespace Ab3d.Assimp
                                     }
                                 }
                             }
-
+  
                         }
                         // else if < 3 just skip this face
 
@@ -1083,7 +1133,7 @@ namespace Ab3d.Assimp
                             for (int j = 1; j < indicesCount; j++)
                             {
                                 int currentIndex = indices[j];
-
+                                
                                 if (currentIndex != firstIndex) // prevent duplicating first index - this could lead to premature closing of the polygon
                                     polygonIndices.Add(currentIndex);
                             }
@@ -1189,7 +1239,7 @@ namespace Ab3d.Assimp
             catch
             { }
         }
-
+        
         private string GetObjectName(DependencyObject dependencyObject)
         {
             if (dependencyObject == null)
@@ -1290,7 +1340,7 @@ namespace Ab3d.Assimp
                 LoggerCallback(msg, data);
         }
 
-
+        
         private const double EPSILON = 2.2204460492503131E-15;
 
         private static bool IsOne(double value)

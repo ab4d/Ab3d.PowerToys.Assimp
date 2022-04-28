@@ -5,6 +5,9 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>Ab3d.PowerToys.Assimp</AssemblyName>
     <RootNamespace>Ab3d.PowerToys.Assimp</RootNamespace>
+    <Version>10.1.8147</Version>
+    <AssemblyVersion>10.1.8147.2300</AssemblyVersion>
+    <FileVersion>10.1.8147.2300</FileVersion>    
   </PropertyGroup>
 
   <ItemGroup>
